@@ -28,7 +28,8 @@ export async function routeMessage(
     reply = await handleCommand(command, { message, accountId, args });
   } else if (text.trim()) {
     // Natural language intent routing
-    reply = await handleIntent({ message, accountId, text });
+    const chatContext = message.chat.title ?? message.chat.first_name ?? "Telegram";
+    reply = await handleIntent({ message, accountId, text, chatContext });
   } else {
     // Non-text message (media, sticker, etc.)
     reply = {

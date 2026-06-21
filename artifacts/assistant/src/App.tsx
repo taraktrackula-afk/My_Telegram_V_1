@@ -14,6 +14,7 @@ import Team from "@/pages/team";
 import Documents from "@/pages/documents";
 import AiProviders from "@/pages/ai-providers";
 import Settings from "@/pages/settings";
+import TelegramSetup from "@/pages/telegram-setup";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ function Router() {
         <Route path="/documents" component={Documents} />
         <Route path="/ai" component={AiProviders} />
         <Route path="/settings" component={Settings} />
+        <Route path="/telegram" component={TelegramSetup} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

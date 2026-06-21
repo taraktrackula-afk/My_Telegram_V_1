@@ -98,6 +98,36 @@ export interface TeamMember {
   updatedAt: string;
 }
 
+export type NoteCategory =
+  | "performance"
+  | "attendance"
+  | "sick_leave"
+  | "general"
+  | "appraisal_note"
+  | "recognition"
+  | "incident"
+  | "training"
+  | "feedback";
+
+export interface TeamMemberNote {
+  id: string;
+  memberId: string;
+  category: NoteCategory;
+  content: string;
+  source: "telegram" | "manual" | "dashboard";
+  chatContext?: string;
+  recordedAt: string;
+  recordedBy: string;
+}
+
+export interface UserPreference {
+  key: string;
+  value: string;
+  learnedAt: string;
+  confidence: number;
+  examples: string[];
+}
+
 export interface AiProvider {
   id: string;
   name: string;
@@ -715,6 +745,59 @@ export const documents: Document[] = [
     tags: ["meetings", "notes"],
   },
 ];
+
+// ─── TEAM MEMBER NOTES (one "sheet" per member, auto-saved from Telegram) ───
+export const teamMemberNotes: TeamMemberNote[] = [
+  {
+    id: "tn-1",
+    memberId: "emp-001",
+    category: "performance",
+    content: "John delivered the new auth system two days ahead of schedule. Exceptional focus and code quality.",
+    source: "manual",
+    recordedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    recordedBy: "Owner",
+  },
+  {
+    id: "tn-2",
+    memberId: "emp-001",
+    category: "sick_leave",
+    content: "John was sick and took two days off — 2026-05-12 and 2026-05-13. Doctor's note provided.",
+    source: "manual",
+    recordedAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
+    recordedBy: "Owner",
+  },
+  {
+    id: "tn-3",
+    memberId: "emp-002",
+    category: "performance",
+    content: "Ali completed all Q2 deliverables on time. Customer satisfaction rating improved by 18%.",
+    source: "manual",
+    recordedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+    recordedBy: "Owner",
+  },
+  {
+    id: "tn-4",
+    memberId: "emp-002",
+    category: "appraisal_note",
+    content: "Ali needs to improve documentation practices. Code is good but comments are sparse.",
+    source: "telegram",
+    chatContext: "Work AI Bot",
+    recordedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    recordedBy: "Owner",
+  },
+  {
+    id: "tn-5",
+    memberId: "emp-003",
+    category: "recognition",
+    content: "Aisha redesigned the onboarding flow and increased conversion by 40%. Outstanding initiative.",
+    source: "manual",
+    recordedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+    recordedBy: "Owner",
+  },
+];
+
+// ─── AI LEARNED USER PREFERENCES ───
+export const userPreferences: UserPreference[] = [];
 
 // ─── SETTINGS ───
 export let settings: Settings = {

@@ -5,9 +5,12 @@ import {
   teamMembers,
   aiProviders,
   accounts,
+  documents,
   makeId,
   getMockAiResponse,
 } from "../mock/data";
+import { getNotesSummaryForAppraisal } from "./team-detector";
+import { getPreference } from "./learning";
 import type { TelegramMessage, BotReply } from "./types";
 
 interface CommandContext {
@@ -43,6 +46,10 @@ export async function handleCommand(
       return handleTeam();
     case "/security_status":
       return handleSecurityStatus(ctx);
+    case "/agenda":
+      return handleAgenda(ctx);
+    case "/appraisal":
+      return handleAppraisalSummary(ctx);
     default:
       return {
         text: `Unknown command: <code>${command}</code>\n\nSend /help to see available commands.`,
@@ -308,6 +315,110 @@ function handleTeam(): BotReply {
 
   return {
     text: `<b>Team Directory (${teamMembers.length} members)</b>\n\n${lines.join("\n\n")}`,
+    parseMode: "HTML",
+  };
+}
+
+function handleAgenda(ctx: CommandContext): BotReply {
+  const format = getPreference("agenda_format") ?? "bullets";
+  const focus = getPreference("meeting_agenda_focus") ?? "tasks_first";
+
+  // Pull relevant RAG data from memories, tasks, reminders, and documents
+  const pendingTasks = tasks.filter((t) => t.status === "pending" || t.status === "in_progress");
+  const upcomingReminders = reminders
+    .filter((r) => r.status === "pending")
+    .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+    .slice(0, 5);
+  const recentMemories = memories
+    .filter((m) => m.tags.includes("meetings") || m.tags.includes("agenda") || m.type === "long_term")
+    .slice(-5);
+  const indexedDocs = documents.filter((d) => d.isIndexed && d.tags.some((t) => ["meetings", "hr", "policy", "planning"].includes(t)));
+
+  // Build agenda sections based on learned focus preference
+  const sections: string[] = [];
+
+  const header = `<b>📋 Meeting Agenda — ${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</b>\n`;
+
+  if (focus === "updates_first") {
+    sections.push(buildUpdatesSection(recentMemories, indexedDocs, format));
+    sections.push(buildTasksSection(pendingTasks, format));
+    sections.push(buildActionItemsSection(upcomingReminders, format));
+  } else if (focus === "actions_last") {
+    sections.push(buildTasksSection(pendingTasks, format));
+    sections.push(buildUpdatesSection(recentMemories, indexedDocs, format));
+    sections.push(buildActionItemsSection(upcomingReminders, format));
+  } else {
+    // Default: tasks_first
+    sections.push(buildTasksSection(pendingTasks, format));
+    sections.push(buildUpdatesSection(recentMemories, indexedDocs, format));
+    sections.push(buildActionItemsSection(upcomingReminders, format));
+  }
+
+  sections.push(`\n<i>Generated from RAG data: ${memories.length} memories, ${documents.filter(d => d.isIndexed).length} indexed docs, ${pendingTasks.length} active tasks.\nSend /agenda again after any updates to refresh.</i>`);
+
+  return { text: header + sections.join("\n\n"), parseMode: "HTML" };
+}
+
+function buildTasksSection(pendingTasks: typeof tasks, format: string): string {
+  const urgentAndHigh = pendingTasks.filter((t) => t.priority === "urgent" || t.priority === "high");
+  const items = urgentAndHigh.slice(0, 5);
+  if (items.length === 0) return "<b>1. Open Tasks</b>\nNo urgent or high-priority items.";
+
+  const lines =
+    format === "numbered"
+      ? items.map((t, i) => `${i + 1}. ${t.title}${t.dueDate ? ` (due ${new Date(t.dueDate).toLocaleDateString()})` : ""}`)
+      : items.map((t) => `• ${t.title}${t.dueDate ? ` (due ${new Date(t.dueDate).toLocaleDateString()})` : ""}`);
+
+  return `<b>1. Open Action Items (${urgentAndHigh.length} urgent/high)</b>\n${lines.join("\n")}`;
+}
+
+function buildUpdatesSection(recentMemories: typeof memories, docs: typeof documents, _format: string): string {
+  const parts: string[] = [];
+  if (recentMemories.length > 0) {
+    parts.push(...recentMemories.slice(0, 3).map((m) => `• ${m.content.slice(0, 80)}`));
+  }
+  if (docs.length > 0) {
+    parts.push(...docs.slice(0, 2).map((d) => `• [Doc] ${d.name}`));
+  }
+  if (parts.length === 0) return "<b>2. Updates & Notes</b>\nNo recent updates found.";
+  return `<b>2. Updates & Notes</b>\n${parts.join("\n")}`;
+}
+
+function buildActionItemsSection(upcomingReminders: typeof reminders, _format: string): string {
+  if (upcomingReminders.length === 0) return "<b>3. Upcoming Deadlines</b>\nNo upcoming deadlines.";
+  const lines = upcomingReminders.map(
+    (r) => `• ${r.title} — ${new Date(r.scheduledAt).toLocaleDateString()}`
+  );
+  return `<b>3. Upcoming Deadlines</b>\n${lines.join("\n")}`;
+}
+
+function handleAppraisalSummary(ctx: CommandContext): BotReply {
+  const memberName = ctx.args.join(" ").trim();
+  if (!memberName) {
+    const list = teamMembers.map((m, i) => `${i + 1}. ${m.fullName} (${m.employeeId})`).join("\n");
+    return {
+      text: `<b>Appraisal Summary</b>\n\nUsage: /appraisal [name]\n\nTeam members:\n${list}`,
+      parseMode: "HTML",
+    };
+  }
+
+  const member = teamMembers.find(
+    (m) =>
+      m.fullName.toLowerCase().includes(memberName.toLowerCase()) ||
+      m.employeeId.toLowerCase() === memberName.toLowerCase()
+  );
+
+  if (!member) {
+    return { text: `No team member found matching "${memberName}". Use /appraisal to list all.` };
+  }
+
+  const summary = getNotesSummaryForAppraisal(member.id);
+  const latestAppraisal = member.appraisals.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  )[0];
+
+  return {
+    text: `<b>Appraisal Summary — ${member.fullName}</b>\n${member.position} | ${member.department}\n\n<b>Last Formal Appraisal</b>\n${latestAppraisal ? `Rating: ${latestAppraisal.rating}/5 — ${latestAppraisal.feedback}` : "No formal appraisal yet."}\n\n<b>Recorded Notes</b>\n${summary}\n\n<i>Use /appraisal ${member.fullName.split(" ")[0]} for a fresh pull after new notes are added.</i>`,
     parseMode: "HTML",
   };
 }
