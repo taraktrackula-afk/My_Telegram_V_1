@@ -98,6 +98,23 @@ export interface TeamMember {
   updatedAt: string;
 }
 
+export type PersonalNoteCategory =
+  | "personal_goal"
+  | "professional_goal"
+  | "notable_work"
+  | "reflection"
+  | "general_note";
+
+export interface PersonalNote {
+  id: string;
+  category: PersonalNoteCategory;
+  content: string;
+  source: "telegram" | "dashboard";
+  isPinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type NoteCategory =
   | "performance"
   | "attendance"
@@ -149,6 +166,8 @@ export interface Document {
   chunkCount: number;
   uploadedAt: string;
   tags: string[];
+  driveSyncStatus?: "pending" | "synced" | "error";
+  mimeType?: string;
 }
 
 export interface ActivityItem {
@@ -743,6 +762,37 @@ export const documents: Document[] = [
     chunkCount: 8,
     uploadedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     tags: ["meetings", "notes"],
+  },
+];
+
+// ─── PERSONAL NOTES (self — goals, achievements, reflections) ───
+export const personalNotes: PersonalNote[] = [
+  {
+    id: "pn-1",
+    category: "professional_goal",
+    content: "Launch NEXUS to production with real Telegram bot connections and Gemini API before end of Q3 2026.",
+    source: "dashboard",
+    isPinned: true,
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "pn-2",
+    category: "notable_work",
+    content: "Built the full NEXUS foundation in a single sprint — OpenAPI spec, 11 API domains, React dashboard, Telegram webhook router, team data sheets, and AI learning engine.",
+    source: "dashboard",
+    isPinned: true,
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "pn-3",
+    category: "personal_goal",
+    content: "Read one technical book per month. Currently reading: Designing Data-Intensive Applications.",
+    source: "dashboard",
+    isPinned: false,
+    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
 

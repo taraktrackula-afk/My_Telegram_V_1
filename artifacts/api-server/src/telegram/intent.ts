@@ -2,10 +2,12 @@ import {
   tasks,
   reminders,
   memories,
+  personalNotes,
   makeId,
   getMockAiResponse,
   aiProviders,
   teamMembers,
+  type PersonalNoteCategory,
 } from "../mock/data";
 import type { TelegramMessage, BotReply } from "./types";
 import { detectAndSaveTeamMentions } from "./team-detector";
@@ -23,6 +25,11 @@ function detectIntent(text: string): string {
   const lower = text.toLowerCase();
 
   if (/agenda|meeting agenda|what.*agenda|prepare.*agenda/i.test(lower)) return "agenda";
+  if (/note (for|to) (my)?self|personal note|note to self/i.test(lower)) return "self_note";
+  if (/my (personal |personal life |life )?goal|personal goal/i.test(lower)) return "personal_goal";
+  if (/professional goal|career goal|work goal|i want to achieve|my goal is/i.test(lower)) return "professional_goal";
+  if (/i (did|achieved|completed|accomplished|finished)|notable (work|achievement)|i'm proud/i.test(lower)) return "notable_work";
+  if (/reflect(ion)?|looking back|lessons? learned|what i learned/i.test(lower)) return "reflection";
   if (/remind|reminder|remind me/.test(lower)) return "set_reminder";
   if (/task|todo|to-do|add task/.test(lower)) return "add_task";
   if (/remember|save|note|write down|keep in mind/.test(lower)) return "save_memory";
@@ -84,9 +91,44 @@ export async function handleIntent(ctx: IntentContext): Promise<BotReply> {
 
   switch (intent) {
     case "agenda": {
-      // Delegate to command handler for full agenda generation
       const { handleCommand } = await import("./commands");
       return handleCommand("/agenda", { message: ctx.message, accountId, args: [] });
+    }
+
+    case "self_note":
+    case "general_note": {
+      const content = text.replace(/note (for|to) (my)?self:?\s*/i, "").replace(/personal note:?\s*/i, "").trim();
+      const now = new Date().toISOString();
+      personalNotes.push({ id: makeId(), category: "general_note", content, source: "telegram", isPinned: false, createdAt: now, updatedAt: now });
+      return { text: `<b>Personal Note Saved</b>\n\n"${content}"\n\n<i>View all in your Personal section or use /mynotes</i>`, parseMode: "HTML" };
+    }
+
+    case "personal_goal": {
+      const content = text.replace(/my (personal |life )?goal(s)? (is|are):?\s*/i, "").trim();
+      const now = new Date().toISOString();
+      personalNotes.push({ id: makeId(), category: "personal_goal", content, source: "telegram", isPinned: false, createdAt: now, updatedAt: now });
+      return { text: `<b>🌱 Personal Goal Saved</b>\n\n"${content}"`, parseMode: "HTML" };
+    }
+
+    case "professional_goal": {
+      const content = text.replace(/(professional|career|work) goal(s)? (is|are):?\s*/i, "").replace(/i want to achieve:?\s*/i, "").replace(/my goal is:?\s*/i, "").trim();
+      const now = new Date().toISOString();
+      personalNotes.push({ id: makeId(), category: "professional_goal", content, source: "telegram", isPinned: false, createdAt: now, updatedAt: now });
+      return { text: `<b>🎯 Professional Goal Saved</b>\n\n"${content}"`, parseMode: "HTML" };
+    }
+
+    case "notable_work": {
+      const content = text.trim();
+      const now = new Date().toISOString();
+      personalNotes.push({ id: makeId(), category: "notable_work", content, source: "telegram", isPinned: false, createdAt: now, updatedAt: now });
+      return { text: `<b>⭐ Achievement Recorded</b>\n\n"${content}"\n\n<i>This will be available during your next self-review.</i>`, parseMode: "HTML" };
+    }
+
+    case "reflection": {
+      const content = text.replace(/reflect(ion)?:?\s*/i, "").replace(/looking back:?\s*/i, "").trim();
+      const now = new Date().toISOString();
+      personalNotes.push({ id: makeId(), category: "reflection", content, source: "telegram", isPinned: false, createdAt: now, updatedAt: now });
+      return { text: `<b>💭 Reflection Saved</b>\n\n"${content}"`, parseMode: "HTML" };
     }
 
     case "set_reminder": {

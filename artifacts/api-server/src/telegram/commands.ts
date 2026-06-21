@@ -6,8 +6,10 @@ import {
   aiProviders,
   accounts,
   documents,
+  personalNotes,
   makeId,
   getMockAiResponse,
+  type PersonalNoteCategory,
 } from "../mock/data";
 import { getNotesSummaryForAppraisal } from "./team-detector";
 import { getPreference } from "./learning";
@@ -50,6 +52,17 @@ export async function handleCommand(
       return handleAgenda(ctx);
     case "/appraisal":
       return handleAppraisalSummary(ctx);
+    case "/note":
+      return handleSelfNote(ctx, "general_note");
+    case "/goal":
+      return handleSelfNote(ctx, "professional_goal");
+    case "/achievement":
+    case "/did":
+      return handleSelfNote(ctx, "notable_work");
+    case "/reflect":
+      return handleSelfNote(ctx, "reflection");
+    case "/mynotes":
+      return handleListSelfNotes(ctx);
     default:
       return {
         text: `Unknown command: <code>${command}</code>\n\nSend /help to see available commands.`,
@@ -73,15 +86,26 @@ function handleHelp(): BotReply {
 /forget [keyword] — Delete matching memories
 /search [query] — Search memory and documents
 
+<b>Personal</b>
+/note [text] — Save a personal note
+/goal [text] — Save a professional goal
+/achievement [text] — Record a notable achievement
+/reflect [text] — Save a reflection
+/mynotes — View all personal notes
+
 <b>Team</b>
 /team — List all team members
+/appraisal [name] — Pull appraisal summary
+
+<b>Meetings</b>
+/agenda — Generate meeting agenda from RAG data
 
 <b>System</b>
 /status — System health and stats
 /security_status — Whitelist and session info
 /help — Show this menu
 
-<i>Tip: You can also chat naturally — no commands needed. Just say what you need.</i>`,
+<i>Tip: You can also chat naturally — no commands needed. Just say what you need. Mentioning a team member's name auto-saves context to their data sheet.</i>`,
     parseMode: "HTML",
   };
 }
@@ -419,6 +443,83 @@ function handleAppraisalSummary(ctx: CommandContext): BotReply {
 
   return {
     text: `<b>Appraisal Summary — ${member.fullName}</b>\n${member.position} | ${member.department}\n\n<b>Last Formal Appraisal</b>\n${latestAppraisal ? `Rating: ${latestAppraisal.rating}/5 — ${latestAppraisal.feedback}` : "No formal appraisal yet."}\n\n<b>Recorded Notes</b>\n${summary}\n\n<i>Use /appraisal ${member.fullName.split(" ")[0]} for a fresh pull after new notes are added.</i>`,
+    parseMode: "HTML",
+  };
+}
+
+function handleSelfNote(ctx: CommandContext, category: PersonalNoteCategory): BotReply {
+  const content = ctx.args.join(" ").trim();
+  if (!content) {
+    const labels: Record<PersonalNoteCategory, string> = {
+      personal_goal: "personal goal",
+      professional_goal: "professional goal",
+      notable_work: "achievement",
+      reflection: "reflection",
+      general_note: "note",
+    };
+    return {
+      text: `Usage: /${ctx.args.length === 0 ? "note" : "goal"} [your ${labels[category]}]\n\nExample:\n/note Read Atomic Habits this month\n/goal Ship NEXUS to production by Q3\n/achievement Closed the biggest deal of the year\n/reflect The sprint went well but planning needs improvement`,
+    };
+  }
+
+  const now = new Date().toISOString();
+  const note = {
+    id: makeId(),
+    category,
+    content,
+    source: "telegram" as const,
+    isPinned: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+  personalNotes.push(note);
+
+  const labels: Record<PersonalNoteCategory, string> = {
+    personal_goal: "Personal Goal",
+    professional_goal: "Professional Goal",
+    notable_work: "Notable Achievement",
+    reflection: "Reflection",
+    general_note: "Personal Note",
+  };
+
+  return {
+    text: `<b>${labels[category]} Saved</b>\n\n"${content}"\n\n<i>Visible in your Personal section of the dashboard. Use /mynotes to see all.</i>`,
+    parseMode: "HTML",
+  };
+}
+
+function handleListSelfNotes(ctx: CommandContext): BotReply {
+  if (personalNotes.length === 0) {
+    return { text: "No personal notes yet. Try:\n/note [text]\n/goal [text]\n/achievement [text]" };
+  }
+
+  const pinned = personalNotes.filter((n) => n.isPinned);
+  const recent = personalNotes
+    .filter((n) => !n.isPinned)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 6);
+
+  const categoryEmoji: Record<PersonalNoteCategory, string> = {
+    professional_goal: "🎯",
+    personal_goal: "🌱",
+    notable_work: "⭐",
+    reflection: "💭",
+    general_note: "📝",
+  };
+
+  const lines: string[] = [];
+  if (pinned.length > 0) {
+    lines.push("<b>📌 Pinned</b>");
+    pinned.forEach((n) => lines.push(`${categoryEmoji[n.category]} ${n.content.slice(0, 80)}`));
+    lines.push("");
+  }
+  if (recent.length > 0) {
+    lines.push("<b>Recent</b>");
+    recent.forEach((n) => lines.push(`${categoryEmoji[n.category]} [${n.category.replace(/_/g, " ")}] ${n.content.slice(0, 80)}`));
+  }
+
+  return {
+    text: `<b>My Notes (${personalNotes.length} total)</b>\n\n${lines.join("\n")}`,
     parseMode: "HTML",
   };
 }

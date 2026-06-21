@@ -1,6 +1,12 @@
 import { Router } from "express";
+import multer from "multer";
 import { documents, makeId } from "../mock/data";
 import { CreateDocumentBody, SearchDocumentsBody } from "@workspace/api-zod";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+});
 
 const router = Router();
 
@@ -40,6 +46,56 @@ router.delete("/documents/:documentId", (req, res) => {
   }
   documents.splice(idx, 1);
   res.status(204).send();
+});
+
+// ─── FILE UPLOAD (mock Google Drive sync) ───
+router.post("/documents/upload", upload.single("file"), (req, res) => {
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ error: "No file provided" });
+    return;
+  }
+
+  const ext = file.originalname.split(".").pop()?.toLowerCase() ?? "";
+  const typeMap: Record<string, "pdf" | "docx" | "txt" | "image" | "spreadsheet" | "other"> = {
+    pdf: "pdf", docx: "docx", doc: "docx",
+    txt: "txt", md: "txt",
+    png: "image", jpg: "image", jpeg: "image", webp: "image",
+    xlsx: "spreadsheet", xls: "spreadsheet", csv: "spreadsheet", ods: "spreadsheet",
+  };
+
+  const tagsFromForm = (req.body as { tags?: string }).tags
+    ? String((req.body as { tags?: string }).tags).split(",").map((t) => t.trim()).filter(Boolean)
+    : [];
+
+  const doc = {
+    id: makeId(),
+    name: file.originalname,
+    type: typeMap[ext] ?? "other",
+    source: "google_drive" as const,
+    size: file.size,
+    isIndexed: false,
+    chunkCount: 0,
+    uploadedAt: new Date().toISOString(),
+    tags: tagsFromForm,
+    driveSyncStatus: "pending" as const,
+    mimeType: file.mimetype,
+    storageUrl: undefined,
+  };
+  documents.push(doc);
+
+  // Simulate async Drive sync + indexing (3s mock delay)
+  setTimeout(() => {
+    const stored = documents.find((d) => d.id === doc.id);
+    if (stored) {
+      stored.driveSyncStatus = "synced";
+      stored.storageUrl = `https://drive.google.com/file/d/mock_${stored.id}`;
+      stored.isIndexed = true;
+      stored.chunkCount = Math.max(1, Math.ceil(file.size / 4096));
+    }
+  }, 3000);
+
+  res.status(201).json(doc);
 });
 
 router.post("/documents/search", (req, res) => {

@@ -10,7 +10,8 @@ import {
   Cpu, 
   Settings as SettingsIcon,
   Activity,
-  Bot
+  Bot,
+  UserCircle
 } from "lucide-react";
 import { useGetSettings } from "@workspace/api-client-react";
 
@@ -24,6 +25,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/memory", label: "Memory", icon: Brain },
     { href: "/tasks", label: "Tasks", icon: CheckSquare },
     { href: "/reminders", label: "Reminders", icon: Bell },
+    { href: "/personal", label: "Personal", icon: UserCircle },
     { href: "/team", label: "Team", icon: Users },
     { href: "/documents", label: "Documents", icon: FileText },
     { href: "/ai", label: "AI Providers", icon: Cpu },
