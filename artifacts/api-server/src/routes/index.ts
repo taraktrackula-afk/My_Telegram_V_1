@@ -10,6 +10,7 @@ import aiRouter from "./ai";
 import documentsRouter from "./documents";
 import dashboardRouter from "./dashboard";
 import settingsRouter from "./settings";
+import telegramRouter from "./telegram";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(aiRouter);
 router.use(documentsRouter);
 router.use(dashboardRouter);
 router.use(settingsRouter);
+router.use(telegramRouter);
 
 export default router;
