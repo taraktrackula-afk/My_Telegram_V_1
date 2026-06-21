@@ -11,7 +11,8 @@ import {
   Settings as SettingsIcon,
   Activity,
   Bot,
-  UserCircle
+  UserCircle,
+  Layers
 } from "lucide-react";
 import { useGetSettings } from "@workspace/api-client-react";
 
@@ -26,6 +27,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/tasks", label: "Tasks", icon: CheckSquare },
     { href: "/reminders", label: "Reminders", icon: Bell },
     { href: "/personal", label: "Personal", icon: UserCircle },
+    { href: "/collections", label: "Collections", icon: Layers },
     { href: "/team", label: "Team", icon: Users },
     { href: "/documents", label: "Documents", icon: FileText },
     { href: "/ai", label: "AI Providers", icon: Cpu },

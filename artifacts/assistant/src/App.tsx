@@ -1,10 +1,7 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Route, Switch } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
-
 import Dashboard from "@/pages/dashboard";
 import Chats from "@/pages/chats";
 import Memory from "@/pages/memory";
@@ -16,8 +13,18 @@ import AiProviders from "@/pages/ai-providers";
 import Settings from "@/pages/settings";
 import TelegramSetup from "@/pages/telegram-setup";
 import Personal from "@/pages/personal";
+import Collections from "@/pages/collections";
 
 const queryClient = new QueryClient();
+
+function NotFound() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+      <p className="text-6xl">404</p>
+      <p className="text-lg">Page not found</p>
+    </div>
+  );
+}
 
 function Router() {
   return (
@@ -34,23 +41,18 @@ function Router() {
         <Route path="/settings" component={Settings} />
         <Route path="/telegram" component={TelegramSetup} />
         <Route path="/personal" component={Personal} />
+        <Route path="/collections" component={Collections} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <Router />
+      <Toaster />
     </QueryClientProvider>
   );
 }
-
-export default App;

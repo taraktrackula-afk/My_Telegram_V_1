@@ -7,12 +7,16 @@ import {
   accounts,
   documents,
   personalNotes,
+  customCollections,
+  collectionEntries,
   makeId,
   getMockAiResponse,
   type PersonalNoteCategory,
+  type CollectionType,
 } from "../mock/data";
 import { getNotesSummaryForAppraisal } from "./team-detector";
 import { getPreference } from "./learning";
+import { findOrCreateCollection } from "../routes/collections";
 import type { TelegramMessage, BotReply } from "./types";
 
 interface CommandContext {
@@ -63,6 +67,18 @@ export async function handleCommand(
       return handleSelfNote(ctx, "reflection");
     case "/mynotes":
       return handleListSelfNotes(ctx);
+    case "/snag":
+      return handleCollectionEntry(ctx, "snags");
+    case "/report":
+      return handleCollectionEntry(ctx, "report");
+    case "/log":
+      return handleCollectionEntry(ctx, "log");
+    case "/feedback":
+      return handleCollectionEntry(ctx, "feedback");
+    case "/collections":
+      return handleListCollections();
+    case "/newcollection":
+      return handleNewCollection(ctx);
     default:
       return {
         text: `Unknown command: <code>${command}</code>\n\nSend /help to see available commands.`,
@@ -92,6 +108,14 @@ function handleHelp(): BotReply {
 /achievement [text] — Record a notable achievement
 /reflect [text] — Save a reflection
 /mynotes — View all personal notes
+
+<b>Collections (Project Data)</b>
+/snag [Project]: [issue] — Log a snag or bug
+/report [Project]: [update] — Add a project report
+/log [Project]: [entry] — Log any entry
+/feedback [Project]: [note] — Record feedback
+/collections — List all your collections
+/newcollection [type] [name] — Create a new collection
 
 <b>Team</b>
 /team — List all team members
@@ -443,6 +467,121 @@ function handleAppraisalSummary(ctx: CommandContext): BotReply {
 
   return {
     text: `<b>Appraisal Summary — ${member.fullName}</b>\n${member.position} | ${member.department}\n\n<b>Last Formal Appraisal</b>\n${latestAppraisal ? `Rating: ${latestAppraisal.rating}/5 — ${latestAppraisal.feedback}` : "No formal appraisal yet."}\n\n<b>Recorded Notes</b>\n${summary}\n\n<i>Use /appraisal ${member.fullName.split(" ")[0]} for a fresh pull after new notes are added.</i>`,
+    parseMode: "HTML",
+  };
+}
+
+// ── project extractor helper ──────────────────────────────────────────────────
+function extractProjectAndContent(args: string[]): { project?: string; content: string } {
+  const raw = args.join(" ");
+  // Pattern: "Project Name: content" or "for Project Name: content"
+  const forMatch = /^(?:for\s+)?(.+?):\s+(.+)$/i.exec(raw);
+  if (forMatch) return { project: forMatch[1].trim(), content: forMatch[2].trim() };
+  return { content: raw.trim() };
+}
+
+const TYPE_LABEL: Record<CollectionType, string> = {
+  snags: "Snag",
+  report: "Report",
+  log: "Log",
+  feedback: "Feedback",
+  checklist: "Checklist",
+  other: "Entry",
+};
+const TYPE_EMOJI_MAP: Record<CollectionType, string> = {
+  snags: "🐛", report: "📋", log: "📓", feedback: "💬", checklist: "✅", other: "📌",
+};
+
+function handleCollectionEntry(ctx: CommandContext, type: CollectionType): BotReply {
+  const { project, content } = extractProjectAndContent(ctx.args);
+  if (!content) {
+    return {
+      text: `Usage: /${type === "snags" ? "snag" : type} [Project Name]: [description]\n\nExamples:\n/${type === "snags" ? "snag" : type} Project Horizon: login breaks on mobile\n/${type === "snags" ? "snag" : type} Project X: sprint 7 complete, delivered auth flow`,
+    };
+  }
+
+  const collectionName = project
+    ? `${project} — ${type === "snags" ? "Snags" : type.charAt(0).toUpperCase() + type.slice(1)}s`
+    : `General ${type.charAt(0).toUpperCase() + type.slice(1)}s`;
+
+  const col = findOrCreateCollection(collectionName, type, project);
+  const now = new Date().toISOString();
+  collectionEntries.push({
+    id: makeId(),
+    collectionId: col.id,
+    content,
+    source: "telegram",
+    severity: type === "snags" ? "medium" : undefined,
+    status: type === "snags" ? "open" : undefined,
+    createdAt: now,
+    updatedAt: now,
+  });
+  col.updatedAt = now;
+
+  const totalInCol = collectionEntries.filter((e) => e.collectionId === col.id).length;
+
+  return {
+    text: `${TYPE_EMOJI_MAP[type]} <b>${TYPE_LABEL[type]} Logged</b>${project ? ` — ${project}` : ""}\n\n"${content}"\n\n<i>Collection: "${col.name}" (${totalInCol} ${totalInCol === 1 ? "entry" : "entries"} total)\nView in dashboard → Collections</i>`,
+    parseMode: "HTML",
+  };
+}
+
+function handleListCollections(): BotReply {
+  if (customCollections.length === 0) {
+    return { text: "No collections yet.\n\nCreate one:\n/snag Project Name: description\n/report Project Name: update\n/newcollection feedback \"Client Feedback\"" };
+  }
+
+  const lines = customCollections
+    .map((col) => {
+      const count = collectionEntries.filter((e) => e.collectionId === col.id).length;
+      const open = collectionEntries.filter((e) => e.collectionId === col.id && e.status === "open").length;
+      return `${col.emoji} <b>${col.name}</b> — ${count} ${count === 1 ? "entry" : "entries"}${open > 0 ? ` (${open} open)` : ""}`;
+    })
+    .join("\n");
+
+  return {
+    text: `<b>📚 Your Collections (${customCollections.length})</b>\n\n${lines}\n\n<i>Add entries: /snag, /report, /log, /feedback\nCreate new: /newcollection [type] [name]</i>`,
+    parseMode: "HTML",
+  };
+}
+
+function handleNewCollection(ctx: CommandContext): BotReply {
+  const raw = ctx.args.join(" ").trim();
+  if (!raw) {
+    return {
+      text: `Usage: /newcollection [type] [name]\n\nTypes: snags, report, log, feedback, checklist, other\n\nExamples:\n/newcollection feedback "Client Feedback — Q3"\n/newcollection log "Daily Standup Notes"\n/newcollection checklist "Launch Checklist"`,
+    };
+  }
+
+  const typeKeywords: Record<string, CollectionType> = {
+    snag: "snags", snags: "snags", bug: "snags", bugs: "snags",
+    report: "report", reports: "report",
+    log: "log", logs: "log",
+    feedback: "feedback",
+    checklist: "checklist", check: "checklist",
+  };
+
+  const words = raw.split(/\s+/);
+  let type: CollectionType = "other";
+  let nameStart = 0;
+  if (typeKeywords[words[0].toLowerCase()]) {
+    type = typeKeywords[words[0].toLowerCase()]!;
+    nameStart = 1;
+  }
+  const name = words.slice(nameStart).join(" ").replace(/^["']|["']$/g, "").trim();
+  if (!name) return { text: "Please provide a name for the collection." };
+
+  const existing = customCollections.find((c) => c.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    return { text: `Collection "${existing.name}" already exists. Add entries with /snag, /report, /log or /feedback.` };
+  }
+
+  const now = new Date().toISOString();
+  const emojis: Record<CollectionType, string> = { snags: "🐛", report: "📋", log: "📓", feedback: "💬", checklist: "✅", other: "📌" };
+  customCollections.push({ id: makeId(), name, type, emoji: emojis[type], createdAt: now, updatedAt: now });
+
+  return {
+    text: `${emojis[type]} <b>Collection Created: "${name}"</b>\n\nType: ${type}\n\nAdd entries:\n/${type === "snags" ? "snag" : type} ${name}: your entry here`,
     parseMode: "HTML",
   };
 }

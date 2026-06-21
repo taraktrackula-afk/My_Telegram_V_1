@@ -3,12 +3,15 @@ import {
   reminders,
   memories,
   personalNotes,
+  collectionEntries,
   makeId,
   getMockAiResponse,
   aiProviders,
   teamMembers,
   type PersonalNoteCategory,
+  type CollectionType,
 } from "../mock/data";
+import { findOrCreateCollection } from "../routes/collections";
 import type { TelegramMessage, BotReply } from "./types";
 import { detectAndSaveTeamMentions } from "./team-detector";
 import { learnFromMessage, buildPersonalizedContext } from "./learning";
@@ -25,6 +28,11 @@ function detectIntent(text: string): string {
   const lower = text.toLowerCase();
 
   if (/agenda|meeting agenda|what.*agenda|prepare.*agenda/i.test(lower)) return "agenda";
+  if (/\bsnag\b|\bbug found\b|\bissue found\b|log.*snag|add.*snag/i.test(lower)) return "col_snag";
+  if (/\breport\b.*(?:for|on)\s+\w|\bproject report\b|sprint report|status report|log.*report/i.test(lower)) return "col_report";
+  if (/\bfeedback\b.*(?:for|on|from)\s+\w|log.*feedback|record.*feedback/i.test(lower)) return "col_feedback";
+  if (/\bnew collection\b|\bcreate collection\b|\badd collection\b/i.test(lower)) return "col_new";
+  if (/\bmy collections\b|\blist collections\b|\bshow collections\b/i.test(lower)) return "col_list";
   if (/note (for|to) (my)?self|personal note|note to self/i.test(lower)) return "self_note";
   if (/my (personal |personal life |life )?goal|personal goal/i.test(lower)) return "personal_goal";
   if (/professional goal|career goal|work goal|i want to achieve|my goal is/i.test(lower)) return "professional_goal";
@@ -93,6 +101,54 @@ export async function handleIntent(ctx: IntentContext): Promise<BotReply> {
     case "agenda": {
       const { handleCommand } = await import("./commands");
       return handleCommand("/agenda", { message: ctx.message, accountId, args: [] });
+    }
+
+    case "col_list": {
+      const { handleCommand } = await import("./commands");
+      return handleCommand("/collections", { message: ctx.message, accountId, args: [] });
+    }
+
+    case "col_snag":
+    case "col_report":
+    case "col_feedback": {
+      const typeMap: Record<string, CollectionType> = { col_snag: "snags", col_report: "report", col_feedback: "feedback" };
+      const type = typeMap[intent]!;
+
+      // Extract "for/on [project]: content" or just use the whole text
+      const forMatch = /(?:snag|report|feedback)\s+(?:for|on|in)\s+(.+?):\s*(.+)/i.exec(text);
+      const colonMatch = /(?:snag|report|feedback)\s+(.+?):\s*(.+)/i.exec(text);
+      let project: string | undefined;
+      let content: string;
+
+      if (forMatch) { project = forMatch[1].trim(); content = forMatch[2].trim(); }
+      else if (colonMatch) { project = colonMatch[1].trim(); content = colonMatch[2].trim(); }
+      else {
+        content = text
+          .replace(/\b(log|add|record|note)\s+(a\s+)?(snag|report|feedback)\b/gi, "")
+          .replace(/\b(snag|report|feedback)\b/gi, "")
+          .trim();
+      }
+
+      const emojis: Record<CollectionType, string> = { snags: "🐛", report: "📋", log: "📓", feedback: "💬", checklist: "✅", other: "📌" };
+      const labels: Record<CollectionType, string> = { snags: "Snag", report: "Report", log: "Log", feedback: "Feedback", checklist: "Checklist", other: "Entry" };
+      const collectionName = project
+        ? `${project} — ${type === "snags" ? "Snags" : labels[type] + "s"}`
+        : `General ${labels[type]}s`;
+      const col = findOrCreateCollection(collectionName, type, project);
+      const now = new Date().toISOString();
+      collectionEntries.push({ id: makeId(), collectionId: col.id, content, source: "telegram", severity: type === "snags" ? "medium" : undefined, status: type === "snags" ? "open" : undefined, createdAt: now, updatedAt: now });
+      col.updatedAt = now;
+      const totalInCol = collectionEntries.filter((e) => e.collectionId === col.id).length;
+      return {
+        text: `${emojis[type]} <b>${labels[type]} Logged</b>${project ? ` — ${project}` : ""}\n\n"${content}"\n\n<i>Collection: "${col.name}" (${totalInCol} total) · View in dashboard → Collections</i>`,
+        parseMode: "HTML",
+      };
+    }
+
+    case "col_new": {
+      const { handleCommand } = await import("./commands");
+      const args = text.replace(/(?:new|create|add)\s+collection\s*/i, "").split(/\s+/);
+      return handleCommand("/newcollection", { message: ctx.message, accountId, args });
     }
 
     case "self_note":

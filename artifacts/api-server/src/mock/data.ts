@@ -765,6 +765,82 @@ export const documents: Document[] = [
   },
 ];
 
+// ─── CUSTOM COLLECTIONS (user-defined data types: snags, reports, etc.) ───
+export type CollectionType = "snags" | "report" | "log" | "feedback" | "checklist" | "other";
+
+export interface CustomCollection {
+  id: string;
+  name: string;
+  projectTag?: string;
+  type: CollectionType;
+  emoji: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CollectionEntry {
+  id: string;
+  collectionId: string;
+  content: string;
+  source: "telegram" | "dashboard";
+  severity?: "low" | "medium" | "high";
+  status?: "open" | "resolved" | "wontfix";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const customCollections: CustomCollection[] = [
+  {
+    id: "col-1",
+    name: "Snags — Project Horizon",
+    projectTag: "Project Horizon",
+    type: "snags",
+    emoji: "🐛",
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "col-2",
+    name: "Project Horizon — Reports",
+    projectTag: "Project Horizon",
+    type: "report",
+    emoji: "📋",
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
+export const collectionEntries: CollectionEntry[] = [
+  {
+    id: "ce-1",
+    collectionId: "col-1",
+    content: "Login page breaks on mobile Safari when keyboard opens — input fields jump behind keyboard.",
+    source: "telegram",
+    severity: "high",
+    status: "open",
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "ce-2",
+    collectionId: "col-1",
+    content: "Dark mode toggle doesn't persist after page refresh — state resets to light mode.",
+    source: "dashboard",
+    severity: "medium",
+    status: "open",
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "ce-3",
+    collectionId: "col-2",
+    content: "Sprint 7 complete. Delivered: auth flow, dashboard charts, mobile layout. Velocity: 34 story points. Next: API rate limit handling and notification system.",
+    source: "telegram",
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
 // ─── PERSONAL NOTES (self — goals, achievements, reflections) ───
 export const personalNotes: PersonalNote[] = [
   {
