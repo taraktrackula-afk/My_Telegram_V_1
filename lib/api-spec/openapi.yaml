@@ -3,20 +3,40 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Personal AI Telegram Assistant API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: accounts
+    description: Telegram account management
+  - name: chats
+    description: Chat history and messaging
+  - name: memory
+    description: Long-term and short-term memory
+  - name: tasks
+    description: Task management
+  - name: reminders
+    description: Reminder management
+  - name: team
+    description: Team member management
+  - name: ai
+    description: AI provider management and chat
+  - name: documents
+    description: Document storage and RAG
+  - name: dashboard
+    description: Dashboard summaries
+  - name: settings
+    description: Application settings
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +44,613 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── ACCOUNTS ───
+  /accounts:
+    get:
+      operationId: listAccounts
+      tags: [accounts]
+      summary: List all Telegram accounts
+      responses:
+        "200":
+          description: List of accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TelegramAccount"
+
+  /accounts/{accountId}:
+    get:
+      operationId: getAccount
+      tags: [accounts]
+      summary: Get a Telegram account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Account details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelegramAccount"
+
+  # ─── CHATS ───
+  /chats:
+    get:
+      operationId: listChats
+      tags: [chats]
+      summary: List chat conversations
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of chats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chat"
+
+  /chats/{chatId}/messages:
+    get:
+      operationId: listMessages
+      tags: [chats]
+      summary: Get messages in a chat
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Messages list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+
+  /chats/{chatId}/send:
+    post:
+      operationId: sendMessage
+      tags: [chats]
+      summary: Send a message to AI via chat context
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  # ─── MEMORY ───
+  /memory:
+    get:
+      operationId: listMemories
+      tags: [memory]
+      summary: List all memories
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [short_term, long_term]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Memory list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Memory"
+    post:
+      operationId: createMemory
+      tags: [memory]
+      summary: Create a new memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemoryRequest"
+      responses:
+        "201":
+          description: Created memory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+
+  /memory/{memoryId}:
+    delete:
+      operationId: deleteMemory
+      tags: [memory]
+      summary: Delete a memory
+      parameters:
+        - name: memoryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── TASKS ───
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List all tasks
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, in_progress, done, cancelled]
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /tasks/{taskId}:
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskRequest"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete a task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── REMINDERS ───
+  /reminders:
+    get:
+      operationId: listReminders
+      tags: [reminders]
+      summary: List all reminders
+      responses:
+        "200":
+          description: Reminder list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reminder"
+    post:
+      operationId: createReminder
+      tags: [reminders]
+      summary: Create a reminder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReminderRequest"
+      responses:
+        "201":
+          description: Created reminder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reminder"
+
+  /reminders/{reminderId}:
+    patch:
+      operationId: updateReminder
+      tags: [reminders]
+      summary: Update a reminder
+      parameters:
+        - name: reminderId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateReminderRequest"
+      responses:
+        "200":
+          description: Updated reminder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reminder"
+    delete:
+      operationId: deleteReminder
+      tags: [reminders]
+      summary: Delete a reminder
+      parameters:
+        - name: reminderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── TEAM ───
+  /team/members:
+    get:
+      operationId: listTeamMembers
+      tags: [team]
+      summary: List all team members
+      responses:
+        "200":
+          description: Team member list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMember"
+    post:
+      operationId: createTeamMember
+      tags: [team]
+      summary: Add a team member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamMemberRequest"
+      responses:
+        "201":
+          description: Created team member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+
+  /team/members/{memberId}:
+    get:
+      operationId: getTeamMember
+      tags: [team]
+      summary: Get a team member
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Team member detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+    patch:
+      operationId: updateTeamMember
+      tags: [team]
+      summary: Update a team member
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTeamMemberRequest"
+      responses:
+        "200":
+          description: Updated team member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+
+  /team/members/{memberId}/appraisals:
+    post:
+      operationId: addAppraisal
+      tags: [team]
+      summary: Add appraisal record
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppraisalRecord"
+      responses:
+        "201":
+          description: Added appraisal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+
+  /team/members/{memberId}/recognitions:
+    post:
+      operationId: addRecognition
+      tags: [team]
+      summary: Add recognition record
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecognitionRecord"
+      responses:
+        "201":
+          description: Added recognition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+
+  # ─── AI ───
+  /ai/chat:
+    post:
+      operationId: aiChat
+      tags: [ai]
+      summary: Send a message to the AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiChatRequest"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiResponsePayload"
+
+  /ai/providers:
+    get:
+      operationId: listAiProviders
+      tags: [ai]
+      summary: List available AI providers
+      responses:
+        "200":
+          description: Provider list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AiProvider"
+
+  /ai/providers/active:
+    patch:
+      operationId: setActiveProvider
+      tags: [ai]
+      summary: Switch active AI provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetActiveProviderRequest"
+      responses:
+        "200":
+          description: Updated active provider
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiProvider"
+
+  # ─── DOCUMENTS ───
+  /documents:
+    get:
+      operationId: listDocuments
+      tags: [documents]
+      summary: List stored documents
+      responses:
+        "200":
+          description: Document list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+    post:
+      operationId: createDocument
+      tags: [documents]
+      summary: Register a document for RAG
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDocumentRequest"
+      responses:
+        "201":
+          description: Created document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+
+  /documents/{documentId}:
+    delete:
+      operationId: deleteDocument
+      tags: [documents]
+      summary: Remove a document
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /documents/search:
+    post:
+      operationId: searchDocuments
+      tags: [documents]
+      summary: RAG search across documents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentSearchRequest"
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DocumentSearchResult"
+
+  # ─── DASHBOARD ───
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard overview stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  # ─── SETTINGS ───
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get application settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update application settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsRequest"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +658,560 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    TelegramAccount:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+          enum: [main, secondary, backup]
+        telegramId:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        isActive:
+          type: boolean
+        lastSeen:
+          type: string
+      required: [id, label, telegramId, username, displayName, isActive]
+
+    Chat:
+      type: object
+      properties:
+        id:
+          type: string
+        accountId:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+          enum: [private, group, channel]
+        lastMessage:
+          type: string
+        lastMessageAt:
+          type: string
+        messageCount:
+          type: integer
+        isArchived:
+          type: boolean
+      required: [id, accountId, title, type, messageCount, isArchived]
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        chatId:
+          type: string
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+        sender:
+          type: string
+        timestamp:
+          type: string
+        hasAttachment:
+          type: boolean
+        attachmentType:
+          type: string
+          enum: [image, document, audio, video]
+        attachmentUrl:
+          type: string
+      required: [id, chatId, role, content, sender, timestamp, hasAttachment]
+
+    SendMessageRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        accountId:
+          type: string
+      required: [content, accountId]
+
+    Memory:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [short_term, long_term]
+        content:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+        createdAt:
+          type: string
+        expiresAt:
+          type: string
+      required: [id, type, content, tags, source, createdAt]
+
+    CreateMemoryRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [short_term, long_term]
+        content:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+      required: [type, content, tags]
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, done, cancelled]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        dueDate:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+      required: [id, title, status, priority, createdAt, updatedAt, tags]
+
+    CreateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        dueDate:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+      required: [title, priority]
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, done, cancelled]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        dueDate:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    Reminder:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        scheduledAt:
+          type: string
+        isRecurring:
+          type: boolean
+        recurrence:
+          type: string
+          enum: [daily, weekly, monthly]
+        status:
+          type: string
+          enum: [pending, sent, dismissed]
+        createdAt:
+          type: string
+      required: [id, title, scheduledAt, isRecurring, status, createdAt]
+
+    CreateReminderRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        scheduledAt:
+          type: string
+        isRecurring:
+          type: boolean
+        recurrence:
+          type: string
+          enum: [daily, weekly, monthly]
+      required: [title, scheduledAt]
+
+    UpdateReminderRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        scheduledAt:
+          type: string
+        isRecurring:
+          type: boolean
+        recurrence:
+          type: string
+          enum: [daily, weekly, monthly]
+        status:
+          type: string
+          enum: [pending, sent, dismissed]
+
+    TeamMember:
+      type: object
+      properties:
+        id:
+          type: string
+        employeeId:
+          type: string
+        fullName:
+          type: string
+        department:
+          type: string
+        position:
+          type: string
+        joiningDate:
+          type: string
+        supervisor:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, on_leave]
+        notes:
+          type: string
+        appraisals:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppraisalRecord"
+        recognitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecognitionRecord"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, employeeId, fullName, department, position, joiningDate, status, appraisals, recognitions, createdAt, updatedAt]
+
+    CreateTeamMemberRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        department:
+          type: string
+        position:
+          type: string
+        joiningDate:
+          type: string
+        supervisor:
+          type: string
+        notes:
+          type: string
+      required: [fullName, department, position, joiningDate]
+
+    UpdateTeamMemberRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        department:
+          type: string
+        position:
+          type: string
+        supervisor:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, on_leave]
+        notes:
+          type: string
+
+    AppraisalRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+        rating:
+          type: integer
+        feedback:
+          type: string
+        reviewer:
+          type: string
+      required: [date, rating, feedback, reviewer]
+
+    RecognitionRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        awardedBy:
+          type: string
+      required: [date, type, description, awardedBy]
+
+    AiChatRequest:
+      type: object
+      properties:
+        message:
+          type: string
+        accountId:
+          type: string
+        useMemory:
+          type: boolean
+          default: true
+        useRag:
+          type: boolean
+          default: false
+      required: [message, accountId]
+
+    AiResponsePayload:
+      type: object
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+        tokensUsed:
+          type: integer
+        memoryUsed:
+          type: boolean
+        ragUsed:
+          type: boolean
+        timestamp:
+          type: string
+      required: [id, message, provider, model, tokensUsed, memoryUsed, ragUsed, timestamp]
+
+    AiProvider:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        model:
+          type: string
+        isActive:
+          type: boolean
+        isConfigured:
+          type: boolean
+        status:
+          type: string
+          enum: [active, inactive, error, mock]
+        requestCount:
+          type: integer
+      required: [id, name, model, isActive, isConfigured, status, requestCount]
+
+    SetActiveProviderRequest:
+      type: object
+      properties:
+        providerId:
+          type: string
+      required: [providerId]
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [pdf, docx, txt, image, spreadsheet, other]
+        source:
+          type: string
+          enum: [google_drive, google_sheets, telegram, manual]
+        storageUrl:
+          type: string
+        size:
+          type: integer
+        isIndexed:
+          type: boolean
+        chunkCount:
+          type: integer
+        uploadedAt:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+      required: [id, name, type, source, isIndexed, chunkCount, uploadedAt, tags]
+
+    CreateDocumentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [pdf, docx, txt, image, spreadsheet, other]
+        source:
+          type: string
+          enum: [google_drive, google_sheets, telegram, manual]
+        storageUrl:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+      required: [name, type, source]
+
+    DocumentSearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        limit:
+          type: integer
+          default: 5
+      required: [query]
+
+    DocumentSearchResult:
+      type: object
+      properties:
+        documentId:
+          type: string
+        documentName:
+          type: string
+        chunk:
+          type: string
+        score:
+          type: number
+        source:
+          type: string
+      required: [documentId, documentName, chunk, score, source]
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalChats:
+          type: integer
+        totalMessages:
+          type: integer
+        totalMemories:
+          type: integer
+        pendingTasks:
+          type: integer
+        upcomingReminders:
+          type: integer
+        teamMembersCount:
+          type: integer
+        documentsIndexed:
+          type: integer
+        activeProvider:
+          type: string
+        accountsActive:
+          type: integer
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityItem"
+      required: [totalChats, totalMessages, totalMemories, pendingTasks, upcomingReminders, teamMembersCount, documentsIndexed, activeProvider, accountsActive, recentActivity]
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+        accountId:
+          type: string
+      required: [id, type, description, timestamp]
+
+    Settings:
+      type: object
+      properties:
+        appMode:
+          type: string
+          enum: [development, production]
+        defaultAiProvider:
+          type: string
+        memoryRetentionDays:
+          type: integer
+        autoSaveToSheets:
+          type: boolean
+        autoSaveToDrive:
+          type: boolean
+        ragEnabled:
+          type: boolean
+        notificationsEnabled:
+          type: boolean
+        telegramBotUsername:
+          type: string
+        whitelistedAccounts:
+          type: array
+          items:
+            type: string
+      required: [appMode, defaultAiProvider, memoryRetentionDays, autoSaveToSheets, autoSaveToDrive, ragEnabled, notificationsEnabled, whitelistedAccounts]
+
+    UpdateSettingsRequest:
+      type: object
+      properties:
+        defaultAiProvider:
+          type: string
+        memoryRetentionDays:
+          type: integer
+        autoSaveToSheets:
+          type: boolean
+        autoSaveToDrive:
+          type: boolean
+        ragEnabled:
+          type: boolean
+        notificationsEnabled:
+          type: boolean

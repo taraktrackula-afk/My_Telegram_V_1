@@ -1,0 +1,566 @@
+PROJECT: PERSONAL AI TELEGRAM ASSISTANT V1 (FOUNDATION BUILD)
+
+IMPORTANT:
+This version is intended to be developed in Replit first and pushed to GitHub. It will later be imported into Google AI Studio for further development.
+
+Therefore:
+
+- DO NOT require actual API keys.
+- DO NOT require actual Telegram bot tokens.
+- DO NOT require actual Firebase credentials.
+- DO NOT require actual Google credentials.
+- Create placeholders and interfaces only.
+- The project must run in DEMO/DEVELOPMENT mode.
+- Use mock services where necessary.
+- The architecture must allow easy replacement with real integrations later.
+
+==================================================
+
+PROJECT GOAL
+
+Build a production-grade foundation for a personal AI assistant that will eventually become a Telegram-based Digital Chief of Staff.
+
+This phase focuses on architecture, code structure, local testing, mock integrations, and GitHub readiness.
+
+Only one owner will use this assistant.
+
+==================================================
+
+TECH STACK
+
+Frontend/UI:
+- Telegram Bot (future)
+
+Development:
+- Replit
+
+Repository:
+- GitHub
+
+Future Deployment:
+- Vercel
+
+Language:
+- TypeScript
+
+Backend:
+- Vercel-compatible architecture
+
+Database:
+- Firebase Firestore (future)
+
+Primary Storage:
+- Google Drive (future)
+
+Structured Data:
+- Google Sheets (future)
+
+AI:
+- Gemini API (future)
+
+==================================================
+
+CURRENT BUILD MODE
+
+DEVELOPMENT MODE
+
+Create a configuration flag:
+
+APP_MODE=development
+
+When in development mode:
+
+- Use mock AI responses.
+- Use mock Telegram users.
+- Use local JSON files instead of APIs.
+- Use sample Google Sheet structures.
+- Use sample Google Drive structures.
+
+The entire project should run without external credentials.
+
+==================================================
+
+FUTURE INTEGRATIONS
+
+Prepare placeholders for:
+
+Telegram Bot Token
+
+Gemini API Key 1
+Gemini API Key 2
+Gemini API Key 3
+
+Firebase Credentials
+
+Google Drive Credentials
+
+Google Sheets Credentials
+
+Vercel Environment Variables
+
+Do NOT implement them now.
+
+==================================================
+
+USER ACCESS MODEL
+
+Future access will allow exactly 3 Telegram accounts.
+
+Create support for:
+
+Main Account
+Secondary Account
+Backup Account
+
+Use mock Telegram IDs for now.
+
+Create a whitelist module.
+
+==================================================
+
+INTERACTION MODEL
+
+Support two modes:
+
+1. Natural Language
+2. Commands
+
+Natural language should be the default.
+
+Commands are secondary.
+
+Routing:
+
+Incoming Message
+↓
+Starts with "/" ?
+├─ Yes → Command Handler
+└─ No → Intent Handler
+
+==================================================
+
+MOCK AI ENGINE
+
+Create an AI Provider Interface.
+
+Example:
+
+generateResponse()
+
+Create providers:
+
+MockProvider
+
+GeminiProvider1 (placeholder)
+
+GeminiProvider2 (placeholder)
+
+GeminiProvider3 (placeholder)
+
+AutoProviderRouter
+
+Mock provider should return sample responses.
+
+==================================================
+
+FOLDER STRUCTURE
+
+assistant/
+├── src/
+│   ├── api/
+│   ├── telegram/
+│   ├── ai/
+│   ├── memory/
+│   ├── sheets/
+│   ├── drive/
+│   ├── rag/
+│   ├── security/
+│   ├── productivity/
+│   ├── config/
+│   ├── mock/
+│   ├── utils/
+│   ├── types/
+│   └── tests/
+├── docs/
+├── scripts/
+├── data/
+├── README.md
+├── package.json
+├── tsconfig.json
+└── .env.example
+
+==================================================
+
+DATA STRATEGY
+
+Future architecture:
+
+Google Drive
+=
+Primary Storage
+
+Google Sheets
+=
+Human-readable database
+
+Firestore
+=
+Cache and metadata
+
+For development:
+
+Use local JSON files.
+
+data/
+├── chats.json
+├── memories.json
+├── tasks.json
+├── reminders.json
+├── team_members.json
+└── settings.json
+
+==================================================
+
+TEAM MANAGEMENT SYSTEM
+
+Create a Team Member Management module.
+
+Future integration:
+
+Google Sheets
+
+==================================================
+
+TEAM MEMBER STRUCTURE
+
+Each team member should have:
+
+Employee ID
+
+Full Name
+
+Department
+
+Position
+
+Joining Date
+
+Supervisor
+
+Status
+
+Notes
+
+Recognition Records
+
+Appraisal Records
+
+Work Logs
+
+Training Records
+
+Attendance Summaries
+
+Documents
+
+==================================================
+
+GOOGLE SHEETS FUTURE DESIGN
+
+IMPORTANT REQUIREMENT:
+
+When a new team member is added:
+
+The system must automatically create a NEW TAB (sheet) inside the master Google Spreadsheet.
+
+Example:
+
+Master Spreadsheet
+
+├── Dashboard
+├── Configuration
+├── EMP001_John_Doe
+├── EMP002_Ali
+├── EMP003_Sharma
+
+Each employee gets a dedicated worksheet.
+
+==================================================
+
+EACH EMPLOYEE SHEET SHOULD STORE
+
+Personal Details
+
+Recognition Records
+
+Appraisal History
+
+Work History
+
+Achievements
+
+Training Records
+
+Attendance Summary
+
+Supervisor Notes
+
+Improvement Plans
+
+Documents References
+
+Action Items
+
+==================================================
+
+DEVELOPMENT MODE IMPLEMENTATION
+
+Simulate Google Sheets using JSON.
+
+Example:
+
+data/team/
+
+EMP001.json
+
+EMP002.json
+
+EMP003.json
+
+Adding a team member should automatically generate the corresponding JSON structure.
+
+This will later be replaced with actual Google Sheets tab creation.
+
+==================================================
+
+PRODUCTIVITY FEATURES
+
+Implement architecture and mocks for:
+
+Tasks
+
+Reminders
+
+Daily Summaries
+
+Recognition Tracking
+
+Work Logs
+
+Appraisals
+
+Training Records
+
+Report Generation
+
+Conversation Summaries
+
+==================================================
+
+MEMORY SYSTEM
+
+Implement:
+
+Short-Term Memory
+
+Long-Term Memory
+
+Memory Retrieval
+
+Memory Storage
+
+Use JSON files for now.
+
+Future storage:
+
+Google Drive.
+
+==================================================
+
+RAG SYSTEM
+
+Prepare architecture only.
+
+Do not implement embeddings yet.
+
+Future workflow:
+
+Google Drive
+↓
+Parse Documents
+↓
+Chunk Documents
+↓
+Embeddings
+↓
+Retrieval
+↓
+Gemini
+
+Create interfaces and placeholders.
+
+==================================================
+
+COMMANDS
+
+Implement mock support for:
+
+/help
+
+/status
+
+/tasks
+
+/addtask
+
+/done
+
+/reminders
+
+/remember
+
+/forget
+
+/search
+
+/report
+
+/team
+
+/addmember
+
+/appraisal
+
+/training
+
+/security_status
+
+==================================================
+
+TEAM COMMANDS
+
+Create commands:
+
+/addmember
+
+/listmembers
+
+/member
+
+/addappraisal
+
+/addrecognition
+
+/addtraining
+
+/addworklog
+
+These should update local JSON structures.
+
+Future implementation should update Google Sheets.
+
+==================================================
+
+SECURITY
+
+Create architecture for:
+
+Whitelist validation
+
+Session locking
+
+Audit logging
+
+Logout
+
+Security status
+
+Use mock authentication.
+
+==================================================
+
+TESTING
+
+Create sample test data.
+
+Generate:
+
+3 employees
+
+Sample tasks
+
+Sample reminders
+
+Sample memories
+
+Sample appraisals
+
+Sample recognitions
+
+Sample work logs
+
+==================================================
+
+README
+
+Generate a complete README including:
+
+Project overview
+
+Architecture
+
+Folder structure
+
+Development setup
+
+How to run locally in Replit
+
+How to push to GitHub
+
+Future migration plan to:
+
+GitHub
+↓
+Vercel
+↓
+Firebase
+↓
+Google Drive
+↓
+Google Sheets
+↓
+Gemini
+
+==================================================
+
+DELIVERABLES
+
+Generate:
+
+1. Complete TypeScript project structure.
+
+2. Production-quality architecture.
+
+3. Mock implementations.
+
+4. Team management system.
+
+5. Employee worksheet simulation.
+
+6. JSON-based storage.
+
+7. Command routing.
+
+8. Natural language routing.
+
+9. AI provider abstraction.
+
+10. README.
+
+11. GitHub-ready codebase.
+
+12. Vercel-compatible architecture.
+
+13. Clear placeholders for future integrations.
+
+The final output should be a clean, modular, maintainable project foundation ready to be pushed from Replit to GitHub and later extended in Google AI Studio without major refactoring.
