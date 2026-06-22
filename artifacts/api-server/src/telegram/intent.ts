@@ -131,9 +131,13 @@ export async function handleIntent(ctx: IntentContext): Promise<BotReply> {
 
       const emojis: Record<CollectionType, string> = { snags: "🐛", report: "📋", log: "📓", feedback: "💬", checklist: "✅", other: "📌" };
       const labels: Record<CollectionType, string> = { snags: "Snag", report: "Report", log: "Log", feedback: "Feedback", checklist: "Checklist", other: "Entry" };
+      const plurals: Record<CollectionType, string> = {
+        snags: "Snags", report: "Reports", log: "Logs",
+        feedback: "Feedback", checklist: "Checklists", other: "Entries",
+      };
       const collectionName = project
-        ? `${project} — ${type === "snags" ? "Snags" : labels[type] + "s"}`
-        : `General ${labels[type]}s`;
+        ? `${project} — ${plurals[type]}`
+        : `General ${plurals[type]}`;
       const col = findOrCreateCollection(collectionName, type, project);
       const now = new Date().toISOString();
       collectionEntries.push({ id: makeId(), collectionId: col.id, content, source: "telegram", severity: type === "snags" ? "medium" : undefined, status: type === "snags" ? "open" : undefined, createdAt: now, updatedAt: now });

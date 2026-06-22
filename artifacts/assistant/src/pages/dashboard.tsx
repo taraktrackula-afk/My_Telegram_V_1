@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, Brain, CheckSquare, Bell, Users, FileText, Cpu, Activity, Send } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { SyncStatusPanel } from "@/components/sync-status-panel";
 
 export default function Dashboard() {
   const { data: summary, isLoading } = useGetDashboardSummary();
@@ -94,6 +95,9 @@ export default function Dashboard() {
           </div>
         </ScrollArea>
       </Card>
+
+      {/* Sync Status Panel */}
+      <SyncStatusPanel />
 
       {/* Quick Command Input */}
       <div className="absolute bottom-6 left-8 right-8">

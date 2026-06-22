@@ -500,9 +500,13 @@ function handleCollectionEntry(ctx: CommandContext, type: CollectionType): BotRe
     };
   }
 
+  const TYPE_PLURAL: Record<CollectionType, string> = {
+    snags: "Snags", report: "Reports", log: "Logs",
+    feedback: "Feedback", checklist: "Checklists", other: "Entries",
+  };
   const collectionName = project
-    ? `${project} — ${type === "snags" ? "Snags" : type.charAt(0).toUpperCase() + type.slice(1)}s`
-    : `General ${type.charAt(0).toUpperCase() + type.slice(1)}s`;
+    ? `${project} — ${TYPE_PLURAL[type]}`
+    : `General ${TYPE_PLURAL[type]}`;
 
   const col = findOrCreateCollection(collectionName, type, project);
   const now = new Date().toISOString();

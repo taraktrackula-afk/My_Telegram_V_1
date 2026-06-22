@@ -39,9 +39,10 @@ router.post("/collections", (req, res) => {
   }
   const colType: CollectionType = type ?? "other";
   const now = new Date().toISOString();
+  const sanitizedName = name.trim().replace(/snagss\b/gi, "Snags");
   const col: (typeof customCollections)[0] = {
     id: makeId(),
-    name: name.trim(),
+    name: sanitizedName,
     projectTag: projectTag?.trim(),
     type: colType,
     emoji: TYPE_EMOJI[colType],

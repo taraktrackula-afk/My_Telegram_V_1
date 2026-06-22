@@ -92,8 +92,12 @@ export default function Collections() {
     e.preventDefault();
     if (!newName.trim()) return;
     setAdding(true);
+    const TYPE_PLURAL: Record<CollectionType, string> = {
+      snags: "Snags", report: "Reports", log: "Logs",
+      feedback: "Feedback", checklist: "Checklists", other: "Entries",
+    };
     const name = newProject.trim()
-      ? `${newProject.trim()} — ${newType === "snags" ? "Snags" : newType.charAt(0).toUpperCase() + newType.slice(1)}s`
+      ? `${newProject.trim()} — ${TYPE_PLURAL[newType]}`
       : newName.trim();
     try {
       const res = await fetch("/api/collections", {
