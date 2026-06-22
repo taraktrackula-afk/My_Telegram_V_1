@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/((?!assets|favicon).*)", "destination": "/index.html" }
+  ],
+  "buildCommand": "cd ../.. && pnpm install && pnpm --filter @workspace/assistant run build",
+  "outputDirectory": "dist/public",
+  "framework": "vite"
+}
